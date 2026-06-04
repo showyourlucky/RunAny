@@ -1,8 +1,8 @@
 ﻿;*************************************************
-;* 【ObjReg菜单项搜索插件】
+;* 【菜单项搜索插件】
 ;*             by RunAny
 ;*************************************************
-global RunAny_Plugins_Name:="ObjReg菜单项搜索插件"
+global RunAny_Plugins_Name:="菜单项搜索插件"
 global RunAny_Plugins_Version:="1.0.0"
 global RunAny_Plugins_Icon:="SHELL32.dll,22"
 
@@ -39,7 +39,7 @@ global MenuSearchIndexBuilt := false  ;索引是否已构建
 global MenuSearchGuiVisible := false ;搜索GUI是否可见
 
 ;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-;~;【ObjReg类 - 菜单项搜索入口】
+;~;【菜单项搜索】
 ;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 class RunAnyObj {
 	;[搜索菜单项]

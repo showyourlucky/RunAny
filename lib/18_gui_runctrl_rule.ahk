@@ -256,6 +256,7 @@ RunCtrlLVAdd:
 	RuleGroupName:=RuleGroupLogic2:=RuleMostRun:=RuleIntervalTime:=RuleGroupKey:=RunCtrlListBox:=""
 	RuleEnable:=RuleGroupLogic1:=true
 	RuleGroupWinKey:=false
+	RuleStopOnSuccess:=false
 	menuItem:="新建"
 	Gosub,RunCtrlConfig
 return
@@ -274,6 +275,7 @@ RunCtrlLVEdit:
 		RuleIntervalTime:=RunCtrlList[RunCtrlListBox].ruleIntervalTime
 		RuleIntervalTime:=RuleIntervalTime=0 ? "" : RuleIntervalTime
 		RuleGroupKey:=RunCtrlList[RunCtrlListBox].key
+		RuleStopOnSuccess:=RunCtrlList[RunCtrlListBox].ruleStopOnSuccess
 		RuleGroupWinKey:=0
 		if(InStr(RuleGroupKey,"#")){
 			RuleGroupWinKey:=1
@@ -301,10 +303,11 @@ RunCtrlConfig:
 	Gui,RunCtrlConfig:Add, GroupBox,xm y+10 w500 h385 vFuncGroup,规则组设置
 	Gui,RunCtrlConfig:Add, Radio, xm+10 yp+25 Checked%RuleGroupLogic1% vvRuleGroupLogic1, 与（全部规则都验证成立）(&A)
 	Gui,RunCtrlConfig:Add, Radio, x+10 yp Checked%RuleGroupLogic2% vvRuleGroupLogic2, 或（一个规则即验证成立）(&O)
-	Gui,RunCtrlConfig:Add, Text, xm+10 y+15 w100, 规则循环最大次数:
+	Gui,RunCtrlConfig:Add, Text, xm+10 y+15 w150, 规则循环最大次数(0=无限):
 	Gui,RunCtrlConfig:Add, Edit, x+2 yp-3 Number w70 h20 vvRuleMostRun, %RuleMostRun%
 	Gui,RunCtrlConfig:Add, Text, x+20 yp+3 w110, 循环间隔时间(秒):
 	Gui,RunCtrlConfig:Add, Edit, x+2 yp-3 w100 h20 vvRuleIntervalTime, %RuleIntervalTime%
+	Gui,RunCtrlConfig:Add, CheckBox, xm+10 y+10 Checked%RuleStopOnSuccess% vvRuleStopOnSuccess, 条件成立后停止循环
 	Gui,RunCtrlConfig:Add, Button, xm+10 y+15 w85 GLVFuncAdd, + 增加规则(&A)
 	Gui,RunCtrlConfig:Add, Button, x+10 yp w85 GLVFuncEdit, · 修改规则(&E)
 	Gui,RunCtrlConfig:Add, Button, x+10 yp w85 GLVFuncRemove, - 减少规则(&D)
@@ -380,17 +383,8 @@ RunCtrlLVSave:
 	;[写入配置文件]
 	Gui,RunCtrlManage:Default
 	ruleLogicVal:=vRuleGroupLogic1=1 ? 1 : 0
-	ruleRunListVal=%vRuleEnable%|%ruleLogicVal%
-	if(vRuleMostRun!=""){
-		ruleRunListVal.="|" vRuleMostRun "|" vRuleIntervalTime
-	}
-	if(vRuleGroupKey!=""){
-		if(vRuleMostRun=""){
-			ruleRunListVal.="||"
-		}
-		vRuleGroupKey:=vRuleGroupWinKey ? "#" . vRuleGroupKey : vRuleGroupKey
-		ruleRunListVal.="|" vRuleGroupKey
-	}
+	keyVal:=vRuleGroupKey!="" ? (vRuleGroupWinKey ? "#" . vRuleGroupKey : vRuleGroupKey) : ""
+	ruleRunListVal=%vRuleEnable%|%ruleLogicVal%|%vRuleMostRun%|%vRuleIntervalTime%|%keyVal%|%vRuleStopOnSuccess%
 
 	if(menuItem="编辑"){
 		runCtrlListNo:=GetKeyByVal(RunCtrlListBoxList, RuleGroupName)

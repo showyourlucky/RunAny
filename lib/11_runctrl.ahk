@@ -60,8 +60,8 @@ RunCtrl_Read:
 		RunCtrlListBoxVar.=runCtrlName "|"
 		RunCtrlListBoxList.Push(runCtrlName)
 		RunCtrlListContentList[runCtrlName]:=varList[2]
-		itemList:=StrSplit(varList[2],"|",,5)
-		RunCtrlObj:=new RunCtrl(runCtrlName,itemList[1],itemList[2],itemList[3],itemList[4],itemList[5])
+		itemList:=StrSplit(varList[2],"|",,6)
+		RunCtrlObj:=new RunCtrl(runCtrlName,itemList[1],itemList[2],itemList[3],itemList[4],itemList[5],itemList[6])
 		RunCtrlList[runCtrlName]:=RunCtrlObj
 		try{
 			if(itemList[1] && itemList[5]!=""){
@@ -83,19 +83,21 @@ class RunCtrl
 	noMenu:=true            ;无菜单项应用
 	key:=""                 ;规则组全局热键
 	ruleLogic:=true         ;规则组逻辑：与、或
-	ruleMostRun:=""         ;规则循环最大次数
+	ruleMostRun:=""         ;规则循环最大次数(0=无限)
 	ruleIntervalTime:=0     ;循环间隔时间(秒)
+	ruleStopOnSuccess:=false ;条件成立后停止循环
 	runNums:=""             ;运行次数
 	runList:=Object()       ;应用运行队列
 	ruleFile:=Object()      ;规则文件
 	ruleList:=Object()      ;规则队列
-	__New(name,enable,ruleLogic,ruleMostRun,ruleIntervalTime,key){
+	__New(name,enable,ruleLogic,ruleMostRun,ruleIntervalTime,key,ruleStopOnSuccess){
 		this.name:=name
 		this.enable:=enable
 		this.ruleLogic:=ruleLogic
 		this.ruleMostRun:=ruleMostRun
 		this.ruleIntervalTime:=ruleIntervalTime
 		this.key:=key
+		this.ruleStopOnSuccess:=ruleStopOnSuccess
 		IniRead,ctrlAppsVar,%RunAnyConfig%,%name%_Run
 		Loop, parse, ctrlAppsVar, `n, `r
 		{
@@ -167,15 +169,15 @@ Rule_Effect:
 				continue
 			}
 			rcName:=runCtrlObj.name
-			;规则循环
-			if(runCtrlObj.ruleMostRun!="" && runCtrlObj.ruleMostRun>0){
-				runIndex[rcName]:=0	;规则定时器初始计数为0
-				funcEffect%rcName%:=Func("RunCtrl_RunRules").Bind(runCtrlObj)	;规则定时器
-				ruleTime:=runCtrlObj.ruleIntervalTime>0 ? runCtrlObj.ruleIntervalTime * 1000 : 1000		;规则定时器间隔时间(秒)
-				SetTimer,% funcEffect%rcName%, %ruleTime%
-			}else if(runCtrlObj.ruleMostRun=""){
-				RunCtrl_RunRules(runCtrlObj)
-			}
+		;规则循环
+		if(runCtrlObj.ruleMostRun!=""){
+			runIndex[rcName]:=0	;规则定时器初始计数为0
+			funcEffect%rcName%:=Func("RunCtrl_RunRules").Bind(runCtrlObj)	;规则定时器
+			ruleTime:=runCtrlObj.ruleIntervalTime>0 ? runCtrlObj.ruleIntervalTime * 1000 : 1000		;规则定时器间隔时间(秒)
+			SetTimer,% funcEffect%rcName%, %ruleTime%
+		}else{
+			RunCtrl_RunRules(runCtrlObj)
+		}
 		}
 		if(RuleRunFailList.Count() > 0){
 			RuleRunFailStr:=StrListJoin("`n",RuleRunFailList)
@@ -199,6 +201,10 @@ RunCtrl_RunRules(runCtrlObj,show:=0){
 					RunCtrl_RunApps(runv.path, runv.noPath, runv.repeatRun, runv.adminRun, runv.runWay)
 				}
 			}
+			;条件成立后停止循环
+			if(runCtrlObj.ruleStopOnSuccess){
+				try SetTimer,% funcEffect%rcName%, Off
+			}
 		}else if(show){
 			ToolTip, ❎ 规则验证失败
 			SetTimer,RemoveToolTip,3000
@@ -213,8 +219,8 @@ RunCtrl_RunRules(runCtrlObj,show:=0){
 			. "`n出错脚本：" e.File "`n出错命令：" e.What "`n错误代码行：" e.Line "`n错误信息：" e.extra "`n" e.message
 	} finally {
 		runIndex[rcName]++	;规则定时器运行计数+1
-		;规则运行计数达到最大循环次数 || 启动项已达到最多运行次数 => 结束定时器
-		if((runIndex[rcName] && runIndex[rcName] >= runCtrlObj.ruleMostRun)){
+		;规则运行计数达到最大循环次数(0=无限不按次数停) => 结束定时器
+		if(runCtrlObj.ruleMostRun>0 && runIndex[rcName] >= runCtrlObj.ruleMostRun){
 			try SetTimer,% funcEffect%rcName%, Off
 		}
 	}
